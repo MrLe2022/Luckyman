@@ -1,0 +1,5 @@
+{
+  "name": "Ứng dụng Bốc Thăm Trúng Thưởng",
+  "description": "Một ứng dụng web đơn giản để tổ chức bốc thăm trúng thưởng. Mỗi người tham gia chỉ có thể trúng thưởng một lần duy nhất, kết quả được lưu lại để đảm bảo công bằng cho các lần bốc thăm sau.",
+  "requestFramePermissions": []
+}
