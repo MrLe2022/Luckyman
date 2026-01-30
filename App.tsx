@@ -24,9 +24,9 @@ export default function App() {
   const [history, setHistory] = useState<Winner[]>([]);
   
   // State Config & UI
-  const [currentPrize, setCurrentPrize] = useState<string>('Giải Khuyến Khích');
+  const [currentPrize, setCurrentPrize] = useState<string>('Giải Đặc Biệt');
   const [isSpinning, setIsSpinning] = useState<boolean>(false);
-  const [displayParticipant, setDisplayParticipant] = useState<string>('---');
+  const [displayParticipant, setDisplayParticipant] = useState<string>('CHÚC MỪNG NĂM MỚI');
   const [winner, setWinner] = useState<Winner | null>(null);
   const [newName, setNewName] = useState<string>('');
   
@@ -60,12 +60,12 @@ export default function App() {
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      // Short high-pitch click
-      osc.type = 'triangle';
+      // Woodblock sound simulation for "Tet" vibe
+      osc.type = 'sine';
       osc.frequency.setValueAtTime(800, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.05);
+      osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.05);
       
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
 
       osc.connect(gain);
@@ -86,14 +86,14 @@ export default function App() {
       const ctx = audioContextRef.current;
       const now = ctx.currentTime;
       
-      const playNote = (freq: number, startTime: number, duration: number) => {
+      const playNote = (freq: number, startTime: number, duration: number, type: OscillatorType = 'triangle') => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         
-        osc.type = 'sine'; // Smooth tone
+        osc.type = type; 
         osc.frequency.value = freq;
         
-        gain.gain.setValueAtTime(0.2, startTime);
+        gain.gain.setValueAtTime(0.3, startTime);
         gain.gain.linearRampToValueAtTime(0, startTime + duration);
         
         osc.connect(gain);
@@ -103,11 +103,13 @@ export default function App() {
         osc.stop(startTime + duration);
       };
 
-      // C Major Arpeggio Fanfare
-      playNote(523.25, now, 0.2);       // C5
-      playNote(659.25, now + 0.1, 0.2); // E5
-      playNote(783.99, now + 0.2, 0.2); // G5
-      playNote(1046.50, now + 0.3, 0.8); // C6 (Longer)
+      // Pentatonic Scale (Asian vibe)
+      playNote(523.25, now, 0.3);       // C5
+      playNote(587.33, now + 0.1, 0.3); // D5
+      playNote(659.25, now + 0.2, 0.3); // E5
+      playNote(783.99, now + 0.3, 0.3); // G5
+      playNote(880.00, now + 0.4, 0.6, 'sine'); // A5
+      playNote(1046.50, now + 0.6, 1.0, 'sine'); // C6
       
     } catch (e) {
       console.error("Audio play error", e);
@@ -206,7 +208,7 @@ export default function App() {
       setParticipants([]);
       setHistory([]);
       setWinner(null);
-      setDisplayParticipant('---');
+      setDisplayParticipant('CHÚC MỪNG NĂM MỚI');
     }
   };
   
@@ -289,35 +291,40 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 text-gray-800 font-sans selection:bg-blue-100">
+    <div className="min-h-screen bg-red-50 text-gray-800 font-sans selection:bg-yellow-200">
+      {/* Decorative Tet Background Pattern */}
+      <div className="fixed inset-0 pointer-events-none opacity-5 z-0" 
+           style={{
+             backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23d00000' fill-opacity='1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+           }}>
+      </div>
+
       {/* Header */}
-      <header className="bg-gradient-to-r from-blue-700 to-blue-600 text-white p-4 shadow-lg sticky top-0 z-10">
-        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+      <header className="bg-gradient-to-r from-red-800 via-red-700 to-red-800 text-white p-4 shadow-lg sticky top-0 z-10 border-b-4 border-yellow-500">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4 relative">
           <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-full">
-               <GiftIcon className="w-6 h-6 text-white" />
+            <div className="bg-yellow-500 p-2 rounded-full shadow-inner border-2 border-yellow-200">
+               <GiftIcon className="w-6 h-6 text-red-900" />
             </div>
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight">Lucky Draw Pro</h1>
+            <h1 className="text-xl md:text-3xl font-black tracking-tighter uppercase text-yellow-300 drop-shadow-md">
+                Lộc Xuân May Mắn
+            </h1>
           </div>
           <div className="flex flex-wrap justify-center items-center gap-2">
              <button 
                 onClick={() => setIsMuted(!isMuted)}
-                className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition mr-2"
+                className="p-2 bg-red-900/50 hover:bg-red-900 rounded-full transition mr-2 border border-red-400"
                 title={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
              >
-                {isMuted ? <VolumeXIcon className="w-5 h-5" /> : <VolumeIcon className="w-5 h-5" />}
+                {isMuted ? <VolumeXIcon className="w-5 h-5 text-yellow-200" /> : <VolumeIcon className="w-5 h-5 text-yellow-200" />}
              </button>
 
-             <label className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-md cursor-pointer transition text-sm font-medium">
+             <label className="flex items-center gap-2 bg-red-900/50 hover:bg-red-900 border border-red-400 px-3 py-1.5 rounded-md cursor-pointer transition text-sm font-bold text-yellow-100 hover:text-white">
                 <UploadIcon className="w-4 h-4" />
                 <span>Nhập Excel</span>
                 <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
              </label>
-             <button onClick={handleExportHistory} className="flex items-center gap-2 bg-green-500 hover:bg-green-600 px-3 py-1.5 rounded-md transition text-sm font-medium shadow-sm">
-                <DownloadIcon className="w-4 h-4" />
-                <span>Xuất Kết Quả</span>
-             </button>
-             <button onClick={handleResetAll} className="flex items-center gap-2 bg-red-500 hover:bg-red-600 px-3 py-1.5 rounded-md transition text-sm font-medium shadow-sm">
+             <button onClick={handleResetAll} className="flex items-center gap-2 bg-red-600 hover:bg-red-500 text-white px-3 py-1.5 rounded-md transition text-sm font-bold shadow-sm border border-red-400">
                 <TrashIcon className="w-4 h-4" />
                 <span>Reset</span>
              </button>
@@ -325,13 +332,13 @@ export default function App() {
         </div>
       </header>
 
-      <main className="container mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6">
+      <main className="container mx-auto p-4 md:p-6 flex flex-col lg:flex-row gap-6 relative z-10">
         
         {/* Left Column: Participants */}
         <div className="lg:w-1/4 flex flex-col gap-4 order-2 lg:order-1">
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col h-[500px] lg:h-auto">
-                <h2 className="font-bold text-gray-700 flex items-center gap-2 mb-3">
-                    <UsersIcon className="w-5 h-5 text-blue-500" />
+            <div className="bg-white p-4 rounded-xl shadow-md border-2 border-red-100 flex flex-col h-[500px] lg:h-auto">
+                <h2 className="font-bold text-red-800 flex items-center gap-2 mb-3 border-b border-red-100 pb-2">
+                    <UsersIcon className="w-5 h-5 text-red-600" />
                     Danh Sách ({participants.length})
                 </h2>
                 <form onSubmit={handleAddParticipant} className="flex gap-2 mb-4">
@@ -340,24 +347,24 @@ export default function App() {
                         value={newName} 
                         onChange={(e) => setNewName(e.target.value)}
                         placeholder="Thêm tên..." 
-                        className="flex-1 border border-gray-300 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+                        className="flex-1 border border-red-200 rounded-md px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 transition bg-red-50 placeholder-red-300"
                     />
-                    <button type="submit" className="bg-blue-600 text-white px-4 py-1.5 rounded-md hover:bg-blue-700 font-bold shadow-sm transition">+</button>
+                    <button type="submit" className="bg-red-600 text-white px-4 py-1.5 rounded-md hover:bg-red-700 font-bold shadow-sm transition border-b-2 border-red-800">+</button>
                 </form>
-                <div className="flex-1 overflow-y-auto border-t border-gray-100 pt-2 custom-scrollbar">
+                <div className="flex-1 overflow-y-auto pt-2 custom-scrollbar">
                     {participants.length === 0 ? (
-                        <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm italic">
-                            <UsersIcon className="w-8 h-8 mb-2 opacity-20" />
+                        <div className="h-full flex flex-col items-center justify-center text-red-300 text-sm italic">
+                            <UsersIcon className="w-8 h-8 mb-2 opacity-30" />
                             <p>Danh sách trống</p>
                         </div>
                     ) : (
                         <ul className="space-y-1">
                             {participants.map((p, idx) => (
-                                <li key={p.id} className="text-sm px-3 py-2 hover:bg-blue-50 rounded-md border-b border-gray-50 last:border-0 flex justify-between items-center group transition-colors">
+                                <li key={p.id} className="text-sm px-3 py-2 hover:bg-yellow-50 rounded-md border-b border-gray-100 last:border-0 flex justify-between items-center group transition-colors">
                                     <span className="truncate flex-1 font-medium text-gray-700">{idx + 1}. {p.name}</span>
                                     <button 
                                         onClick={() => handleRemoveParticipant(p.id)}
-                                        className="ml-2 text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all"
+                                        className="ml-2 text-gray-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-full opacity-0 group-hover:opacity-100 transition-all"
                                         title="Xóa"
                                     >
                                         <TrashIcon className="w-3.5 h-3.5" />
@@ -374,47 +381,81 @@ export default function App() {
         <div className="lg:w-2/4 flex flex-col gap-6 order-1 lg:order-2">
             
             {/* Control Panel */}
-            <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100">
+            <div className="bg-white p-6 rounded-2xl shadow-xl border-2 border-yellow-200 relative overflow-hidden">
+                 {/* Decorative Corner Flowers (CSS only) */}
+                 <div className="absolute top-0 right-0 w-16 h-16 bg-gradient-to-bl from-red-100 to-transparent rounded-bl-3xl -z-0"></div>
+                 <div className="absolute bottom-0 left-0 w-16 h-16 bg-gradient-to-tr from-red-100 to-transparent rounded-tr-3xl -z-0"></div>
+
                  {/* Prize Input */}
-                 <div className="mb-6">
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Giải thưởng hiện tại</label>
+                 <div className="mb-6 relative z-10">
+                    <label className="block text-xs font-bold text-red-500 uppercase tracking-wider mb-2">Giải thưởng</label>
                     <input 
                         type="text" 
                         value={currentPrize}
                         onChange={(e) => setCurrentPrize(e.target.value)}
-                        className="w-full text-xl font-bold text-blue-900 border-b-2 border-blue-100 px-2 py-1 focus:border-blue-500 outline-none bg-transparent transition-colors placeholder-blue-200"
-                        placeholder="Nhập tên giải thưởng..."
+                        className="w-full text-2xl font-black text-red-700 border-b-2 border-red-200 px-2 py-1 focus:border-red-500 outline-none bg-transparent transition-colors placeholder-red-200 text-center"
+                        placeholder="Nhập tên giải..."
                     />
                  </div>
 
-                 {/* Display Stage - The "Exciting" Part */}
-                 <div className="relative mb-8 group">
-                    {/* Decorative lights/glow */}
-                    <div className={`absolute -inset-1 rounded-2xl opacity-75 blur transition duration-500 ${isSpinning ? 'bg-gradient-to-r from-yellow-400 via-red-500 to-purple-600 animate-pulse' : 'bg-gray-200'}`}></div>
+                 {/* Display Stage - The "Tet" Part */}
+                 <div className="relative mb-8 group perspective-1000">
                     
-                    <div className="relative bg-gray-900 rounded-xl p-10 md:p-14 text-center border-4 border-gray-800 shadow-2xl flex flex-col items-center justify-center min-h-[250px] overflow-hidden">
+                    {/* Lantern strings */}
+                    <div className="absolute -top-4 left-4 w-0.5 h-12 bg-red-300 z-20 flex flex-col items-center">
+                        <div className="mt-12 w-8 h-10 bg-red-600 rounded-lg shadow-lg border-t-4 border-yellow-400 relative">
+                             <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 w-4 h-6 border-l border-r border-yellow-400/50"></div>
+                        </div>
+                    </div>
+                    <div className="absolute -top-8 right-8 w-0.5 h-16 bg-red-300 z-20 flex flex-col items-center">
+                        <div className="mt-16 w-10 h-12 bg-red-600 rounded-lg shadow-lg border-t-4 border-yellow-400 relative">
+                             <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 w-5 h-8 border-l border-r border-yellow-400/50"></div>
+                        </div>
+                    </div>
+
+                    {/* Main Stage Box */}
+                    <div className="relative bg-red-900 rounded-2xl p-10 md:p-14 text-center border-[6px] border-yellow-500 shadow-2xl flex flex-col items-center justify-center min-h-[300px] overflow-hidden outline outline-4 outline-red-800 outline-offset-2">
                         
-                        {/* Background Pattern */}
-                        <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle, #ffffff 2px, transparent 2px)', backgroundSize: '20px 20px'}}></div>
+                        {/* Inner corner decorations */}
+                        <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-yellow-400"></div>
+                        <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-yellow-400"></div>
+                        <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-yellow-400"></div>
+                        <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-yellow-400"></div>
+
+                        {/* Background Pattern - Tet/Traditional */}
+                        <div className="absolute inset-0 opacity-10 pointer-events-none" 
+                             style={{backgroundImage: 'radial-gradient(circle, #fbbf24 1px, transparent 1px)', backgroundSize: '24px 24px'}}>
+                        </div>
+
+                        {/* Background Rays - Dynamic for Winner */}
+                        {!isSpinning && winner && (
+                            <div className="absolute inset-0 pointer-events-none z-0 opacity-40 animate-[spin_12s_linear_infinite]">
+                                <div className="w-full h-full bg-[conic-gradient(from_0deg_at_50%_50%,_#FCD34D_0deg,_transparent_30deg,_#FCD34D_120deg,_transparent_150deg,_#FCD34D_240deg,_transparent_270deg,_#FCD34D_360deg)] scale-[2]"></div>
+                            </div>
+                        )}
 
                         {/* Status Text */}
-                        <p className={`relative z-10 text-xs font-bold uppercase tracking-[0.2em] mb-4 transition-colors ${isSpinning ? 'text-yellow-400 animate-pulse' : 'text-gray-500'}`}>
-                            {isSpinning ? 'Đang quay...' : 'Người may mắn'}
+                        <p className={`relative z-10 text-xs font-bold uppercase tracking-[0.2em] mb-4 transition-colors ${isSpinning ? 'text-yellow-300 animate-pulse' : 'text-red-300/80'}`}>
+                            {isSpinning ? 'Đang tìm chủ nhân...' : 'Xin chúc mừng'}
                         </p>
 
                         {/* Main Name Display */}
-                        <div className={`relative z-10 text-4xl md:text-6xl font-black text-white tracking-wide break-words drop-shadow-lg transition-all duration-75 ${isSpinning ? 'blur-[1px] scale-105' : ''}`}>
+                        <div className={`relative z-10 font-black tracking-wide break-words drop-shadow-2xl transition-all duration-75 
+                            ${isSpinning ? 'text-4xl md:text-5xl text-yellow-100 blur-[0.5px]' : ''}
+                            ${!isSpinning && winner ? 'text-5xl md:text-7xl text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 to-yellow-600 animate-winner-pop' : 'text-4xl md:text-6xl text-yellow-50'}
+                            ${!isSpinning && !winner ? 'text-white/80' : ''}
+                        `}>
                             {displayParticipant}
                         </div>
                     </div>
                  </div>
 
                  {/* Settings Sliders */}
-                 <div className="grid grid-cols-2 gap-6 mb-6 px-2">
+                 <div className="grid grid-cols-2 gap-6 mb-6 px-2 bg-red-50 p-4 rounded-xl border border-red-100">
                     <div>
-                        <div className="flex justify-between text-xs font-semibold text-gray-500 mb-2">
+                        <div className="flex justify-between text-xs font-bold text-red-600 mb-2">
                             <span>Tốc độ</span>
-                            <span className="text-blue-600">{spinSpeedLevel}/10</span>
+                            <span className="bg-red-200 px-2 rounded-full">{spinSpeedLevel}</span>
                         </div>
                         <input 
                             type="range" 
@@ -422,13 +463,13 @@ export default function App() {
                             value={spinSpeedLevel} 
                             onChange={(e) => setSpinSpeedLevel(parseInt(e.target.value))}
                             disabled={isSpinning}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500 disabled:opacity-50"
+                            className="w-full h-2 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-600 hover:accent-red-500 disabled:opacity-50"
                         />
                     </div>
                     <div>
-                        <div className="flex justify-between text-xs font-semibold text-gray-500 mb-2">
+                        <div className="flex justify-between text-xs font-bold text-red-600 mb-2">
                             <span>Thời gian</span>
-                            <span className="text-blue-600">{spinDuration}s</span>
+                            <span className="bg-red-200 px-2 rounded-full">{spinDuration}s</span>
                         </div>
                         <input 
                             type="range" 
@@ -437,7 +478,7 @@ export default function App() {
                             value={spinDuration} 
                             onChange={(e) => setSpinDuration(parseFloat(e.target.value))}
                             disabled={isSpinning}
-                            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500 disabled:opacity-50"
+                            className="w-full h-2 bg-red-200 rounded-lg appearance-none cursor-pointer accent-red-600 hover:accent-red-500 disabled:opacity-50"
                         />
                     </div>
                  </div>
@@ -446,25 +487,29 @@ export default function App() {
                  <button 
                     onClick={handleDraw}
                     disabled={isSpinning || participants.length === 0}
-                    className={`w-full py-4 rounded-xl text-xl font-black tracking-widest text-white shadow-xl transform transition-all active:scale-95 ${
+                    className={`w-full py-4 rounded-xl text-2xl font-black uppercase tracking-widest shadow-[0_4px_0_rgb(180,83,9)] transform transition-all active:shadow-none active:translate-y-[4px] border-2 border-yellow-200 ${
                         isSpinning 
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-500 hover:to-indigo-600 hover:shadow-2xl hover:-translate-y-1'
+                        ? 'bg-gray-400 text-gray-200 cursor-not-allowed border-gray-500 shadow-none' 
+                        : 'bg-gradient-to-b from-yellow-400 to-yellow-600 text-red-900 hover:from-yellow-300 hover:to-yellow-500'
                     }`}
                  >
-                    {isSpinning ? 'ĐANG QUAY...' : 'BẮT ĐẦU QUAY'}
+                    {isSpinning ? 'ĐANG QUAY...' : 'QUAY THƯỞNG'}
                  </button>
             </div>
 
             {/* Winner Notification Popup */}
             {winner && !isSpinning && (
-                <div className="bg-gradient-to-br from-yellow-50 to-orange-50 border border-yellow-200 p-6 rounded-xl shadow-lg text-center transform animate-[bounce_1s_infinite]">
-                    <div className="inline-block p-3 bg-yellow-100 rounded-full mb-2">
-                        <TrophyIcon className="w-8 h-8 text-yellow-600" />
+                <div className="relative overflow-hidden bg-gradient-to-r from-red-600 to-red-800 border-4 border-yellow-400 p-6 rounded-xl shadow-2xl text-center transform animate-[bounce_1s_infinite]">
+                    {/* Confetti effect (simple CSS dots) */}
+                    <div className="absolute top-2 left-4 w-2 h-2 bg-yellow-300 rounded-full animate-pulse"></div>
+                    <div className="absolute top-8 right-10 w-3 h-3 bg-white rounded-full animate-bounce"></div>
+                    
+                    <div className="inline-block p-3 bg-yellow-500 rounded-full mb-3 shadow-lg border-2 border-yellow-200">
+                        <TrophyIcon className="w-10 h-10 text-red-900" />
                     </div>
-                    <h3 className="text-yellow-800 font-bold text-lg uppercase tracking-wide">Xin chúc mừng</h3>
-                    <p className="text-3xl font-black text-gray-900 my-2">{winner.name}</p>
-                    <div className="inline-block bg-white px-4 py-1 rounded-full border border-yellow-200 text-sm font-medium text-yellow-700 shadow-sm">
+                    <h3 className="text-yellow-200 font-bold text-xl uppercase tracking-wide mb-1">Chúc Mừng Năm Mới</h3>
+                    <p className="text-4xl font-black text-white my-3 drop-shadow-md uppercase">{winner.name}</p>
+                    <div className="inline-block bg-yellow-100 px-6 py-2 rounded-full border-2 border-yellow-500 text-base font-bold text-red-800 shadow-sm">
                         {winner.prize}
                     </div>
                 </div>
@@ -473,34 +518,35 @@ export default function App() {
 
         {/* Right Column: History */}
         <div className="lg:w-1/4 order-3">
-             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col h-[500px] lg:h-auto">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="font-bold text-gray-700 flex items-center gap-2">
-                        <HistoryIcon className="w-5 h-5 text-orange-500" />
+             <div className="bg-white p-4 rounded-xl shadow-md border-2 border-red-100 flex flex-col h-[500px] lg:h-auto">
+                <div className="flex justify-between items-center mb-4 border-b border-red-100 pb-2">
+                    <h2 className="font-bold text-red-800 flex items-center gap-2">
+                        <HistoryIcon className="w-5 h-5 text-yellow-600" />
                         Lịch Sử
                     </h2>
                     {history.length > 0 && (
-                        <button onClick={handleResetHistory} className="text-xs text-red-500 hover:text-red-700 hover:bg-red-50 px-2 py-1 rounded transition">
-                            Xóa hết
+                        <button onClick={handleExportHistory} className="flex items-center gap-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded font-bold">
+                            <DownloadIcon className="w-3 h-3" /> Xuất Excel
                         </button>
                     )}
                 </div>
                 
                 <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
                     {history.length === 0 ? (
-                         <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm italic">
-                            <HistoryIcon className="w-8 h-8 mb-2 opacity-20" />
+                         <div className="h-full flex flex-col items-center justify-center text-red-300 text-sm italic">
+                            <HistoryIcon className="w-8 h-8 mb-2 opacity-30" />
                             <p>Chưa có kết quả</p>
                         </div>
                     ) : (
                         <div className="space-y-3">
                             {history.map((h, idx) => (
-                                <div key={idx} className="bg-gray-50 p-3 rounded-lg border border-gray-100 relative group hover:shadow-md transition-all hover:bg-white hover:border-blue-200">
+                                <div key={idx} className="bg-red-50 p-3 rounded-lg border border-red-100 relative group hover:shadow-md transition-all hover:bg-white hover:border-yellow-300">
                                     <div className="flex justify-between items-start mb-1">
-                                         <span className="text-xs font-semibold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">{h.timestamp.split(' ')[1]}</span>
+                                         <span className="text-[10px] font-bold text-red-400 uppercase">Lượt {history.length - idx}</span>
+                                         <span className="text-[10px] font-semibold text-gray-400">{h.timestamp.split(' ')[1]}</span>
                                     </div>
-                                    <div className="font-bold text-blue-800 text-lg mb-1">{h.name}</div>
-                                    <div className="text-xs font-medium text-orange-600 bg-orange-50 inline-block px-2 py-1 rounded border border-orange-100">
+                                    <div className="font-bold text-red-800 text-lg mb-1 leading-tight">{h.name}</div>
+                                    <div className="text-xs font-bold text-yellow-700 bg-yellow-100 inline-block px-2 py-0.5 rounded border border-yellow-200">
                                         {h.prize}
                                     </div>
                                 </div>
@@ -513,25 +559,37 @@ export default function App() {
 
       </main>
 
-      <footer className="mt-12 py-6 text-center text-gray-400 text-xs">
-        <p>&copy; {new Date().getFullYear()} Lucky Draw App</p>
+      <footer className="mt-12 py-6 text-center text-red-400/60 text-xs font-medium relative z-10">
+        <p>&copy; {new Date().getFullYear()} Xuân Giáp Thìn - Vạn Sự Như Ý</p>
       </footer>
       
-      {/* CSS Utilities for hide scrollbar but keep functionality if needed */}
+      {/* CSS Utilities */}
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 6px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: #f1f1f1;
+          background: #fff1f2; /* red-50 */
           border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #d1d5db; 
+          background: #fca5a5; /* red-300 */
           border-radius: 4px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: #9ca3af; 
+          background: #ef4444; /* red-500 */
+        }
+
+        @keyframes winner-pop {
+            0% { transform: scale(0.8); opacity: 0; }
+            40% { transform: scale(1.1) rotate(-3deg); opacity: 1; }
+            60% { transform: scale(1.1) rotate(3deg); }
+            80% { transform: scale(1.1) rotate(-3deg); }
+            100% { transform: scale(1) rotate(0); }
+        }
+        .animate-winner-pop {
+            animation: winner-pop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+            text-shadow: 2px 2px 0px rgba(180, 83, 9, 0.5); /* Shadow for gold text */
         }
       `}</style>
     </div>
