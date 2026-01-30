@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GiftIcon, UsersIcon, TrashIcon, HistoryIcon, UploadIcon, DownloadIcon } from './components/Icons';
+import { GiftIcon, UsersIcon, TrashIcon, HistoryIcon, UploadIcon, DownloadIcon, VolumeIcon, VolumeXIcon } from './components/Icons';
 
 declare const XLSX: any;
 
@@ -33,8 +33,86 @@ export default function App() {
   // Settings
   const [spinDuration, setSpinDuration] = useState<number>(3); // Seconds
   const [spinSpeedLevel, setSpinSpeedLevel] = useState<number>(5); // 1-10
+  const [isMuted, setIsMuted] = useState<boolean>(false);
 
   const timerRef = useRef<any>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+
+  // Initialize Audio Context on first interaction
+  const initAudio = () => {
+    if (!audioContextRef.current) {
+      const AudioContextClass = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextClass) {
+        audioContextRef.current = new AudioContextClass();
+      }
+    }
+    if (audioContextRef.current?.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+  };
+
+  // Sound Effect: Tick (Mechanical Click)
+  const playTickSound = () => {
+    if (isMuted || !audioContextRef.current) return;
+    
+    try {
+      const ctx = audioContextRef.current;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      // Short high-pitch click
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(800, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(300, ctx.currentTime + 0.05);
+      
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.05);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start();
+      osc.stop(ctx.currentTime + 0.05);
+    } catch (e) {
+      console.error("Audio play error", e);
+    }
+  };
+
+  // Sound Effect: Win (Fanfare)
+  const playWinSound = () => {
+    if (isMuted || !audioContextRef.current) return;
+
+    try {
+      const ctx = audioContextRef.current;
+      const now = ctx.currentTime;
+      
+      const playNote = (freq: number, startTime: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        
+        osc.type = 'sine'; // Smooth tone
+        osc.frequency.value = freq;
+        
+        gain.gain.setValueAtTime(0.2, startTime);
+        gain.gain.linearRampToValueAtTime(0, startTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+
+      // C Major Arpeggio Fanfare
+      playNote(523.25, now, 0.2);       // C5
+      playNote(659.25, now + 0.1, 0.2); // E5
+      playNote(783.99, now + 0.2, 0.2); // G5
+      playNote(1046.50, now + 0.3, 0.8); // C6 (Longer)
+      
+    } catch (e) {
+      console.error("Audio play error", e);
+    }
+  };
 
   // Load data from LocalStorage on mount
   useEffect(() => {
@@ -149,6 +227,9 @@ export default function App() {
 
     if (isSpinning) return;
 
+    // Initialize Audio Context (user gesture)
+    initAudio();
+
     setIsSpinning(true);
     setWinner(null);
 
@@ -164,6 +245,9 @@ export default function App() {
       const randomIndex = Math.floor(Math.random() * participants.length);
       const currentName = participants[randomIndex].name;
       setDisplayParticipant(currentName);
+      
+      // Play Tick Sound
+      playTickSound();
 
       elapsedTime += currentInterval;
 
@@ -185,6 +269,9 @@ export default function App() {
   };
 
   const finishDraw = (selectedWinner: Participant) => {
+    // Play Win Sound
+    playWinSound();
+
     // Tạo record người thắng
     const winRecord: Winner = {
       ...selectedWinner,
@@ -212,7 +299,15 @@ export default function App() {
             </div>
             <h1 className="text-xl md:text-2xl font-bold tracking-tight">Lucky Draw Pro</h1>
           </div>
-          <div className="flex flex-wrap justify-center gap-2">
+          <div className="flex flex-wrap justify-center items-center gap-2">
+             <button 
+                onClick={() => setIsMuted(!isMuted)}
+                className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition mr-2"
+                title={isMuted ? "Bật âm thanh" : "Tắt âm thanh"}
+             >
+                {isMuted ? <VolumeXIcon className="w-5 h-5" /> : <VolumeIcon className="w-5 h-5" />}
+             </button>
+
              <label className="flex items-center gap-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-md cursor-pointer transition text-sm font-medium">
                 <UploadIcon className="w-4 h-4" />
                 <span>Nhập Excel</span>
