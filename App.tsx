@@ -1,490 +1,354 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { GiftIcon, UsersIcon, TrophyIcon, TrashIcon, RefreshCwIcon, HistoryIcon, UploadIcon, DownloadIcon } from './components/Icons';
 
 declare const XLSX: any;
 
 const LOCAL_STORAGE_KEY_PARTICIPANTS = 'luckyDraw_participants';
-const LOCAL_STORAGE_KEY_DRAWN = 'luckyDraw_drawnParticipants';
+const LOCAL_STORAGE_KEY_HISTORY = 'luckyDraw_history';
 
-// Base64 encoded audio for sound effects to avoid needing extra files
-const SPINNING_SOUND_BASE64 = 'data:audio/mpeg;base64,SUQzBAAAAAAAIVRYWFgAAAASAAADbWFqb3JfYnJhbmQAbXAzNAAIVFNzZQAAAA8AAANMYXZmNTguNzYuMTAw//uQxAAAAAABFVFBRUgA8ALM/8z/xAAE1ERERP/8AAMA0VEREREREREQ0RERERERERERDRERERERERERENCg0RDREREQ0KDREREREQ0NDQ0NERERDRERDQ0NDQ0NDQ0NAADSUxIRETEyMc9UEtLRUREQ0RERENDQ0NDQ0NDQ0NEREREREREREQ0RERERERERERDREREREREREQ0RERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxAsAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxBgAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxBwAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxCAAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxCQAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxCwAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxDAAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxDQAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxDwAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxEAAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxEQAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxEgAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxFAAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxFQAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxFwAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R//uQxGAAAANIAAAAQAAAaIz/zP/EAATURERER//wAAwDRERERERERENA0RERERERERDRDRERERERERDQoNEQ0RERENCg0RERERDQ0NDQ0RERDQ0RDRDQ0NDQ0NDQ0AANJTEhERMTIxz1Q SURFRENEUkRERE0NDQ0NDQ0NDQ1ERERERERERENE牡丹ERERERERDRERERERERENCg0RERERERERDRERERERERERDQoNEREQ0RERDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NEREREREREREREREREREREREREREREREREQ0NDQ0NERDQ0NERERDQ0RDRDQ0NDQ0RDRDRDQ0NDQ0R';
-const WIN_SOUND_BASE64 = 'data:audio/mpeg;base64,SUQzBAAAAAAAI1RYWFgAAAASAAADbWFqb3JfYnJhbmQAbXAzNAAIVFNzZQAAAA8AAANMYXZmNTguNzYuMTAw//uQxAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD/8AAMIASGQAYkZglwAxIHYA6AACQUgA/+2e//uQxAUwAAANIAAAAQAAAaABTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV//uQxCEwAAANIAAAAQAAAaABTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV-i..MPx/8//8BAAABodHRwOi8vd3d3Lmx1Y2Fza3JlbWVycy5jb20vbXVzaWMvAAACaHR0cDovL3d3dy5sdWNhc2tyZW1lcnMuY29tL211c2ljLy9AQEA/8AAMIQyGQAYUglgAxIF2AIaAACQcgA/+2e//uQxDAwAAANIAAAAQAAAaABTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV-..MP3/8AAMIQyGQAYUglgAxIF2AIaAACQcgA/+2e//uQxDAwAAANIAAAAQAAAaABTEFNRTMuMTAwVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVVV-..MP3';
+interface Participant {
+  id: string;
+  name: string;
+}
 
-const App: React.FC = () => {
-    const [participants, setParticipants] = useState<string[]>([]);
-    const [newParticipantInput, setNewParticipantInput] = useState<string>('');
-    const [participantError, setParticipantError] = useState<string>('');
-    
-    const [numWinnersInput, setNumWinnersInput] = useState<string>('1');
-    const [winners, setWinners] = useState<string[]>([]);
-    const [drawnParticipants, setDrawnParticipants] = useState<string[]>([]);
-    const [isDrawing, setIsDrawing] = useState<boolean>(false);
-    const [error, setError] = useState<string>('');
-    const [drawingName, setDrawingName] = useState<string>('');
-    const [showHistory, setShowHistory] = useState<boolean>(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const animationFrameId = useRef<number | null>(null);
-    const spinningSoundRef = useRef<HTMLAudioElement>(null);
-    const winSoundRef = useRef<HTMLAudioElement>(null);
+interface Winner {
+  id: string;
+  name: string;
+  prize: string;
+  timestamp: string;
+}
 
+export default function App() {
+  // State
+  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [history, setHistory] = useState<Winner[]>([]);
+  const [currentPrize, setCurrentPrize] = useState<string>('Giải Khuyến Khích');
+  const [isSpinning, setIsSpinning] = useState<boolean>(false);
+  const [displayParticipant, setDisplayParticipant] = useState<string>('---');
+  const [winner, setWinner] = useState<Winner | null>(null);
+  const [newName, setNewName] = useState<string>('');
 
-    useEffect(() => {
-        try {
-            const storedDrawn = localStorage.getItem(LOCAL_STORAGE_KEY_DRAWN);
-            if (storedDrawn) {
-                setDrawnParticipants(JSON.parse(storedDrawn));
-            }
-            const storedParticipants = localStorage.getItem(LOCAL_STORAGE_KEY_PARTICIPANTS);
-            if (storedParticipants) {
-                setParticipants(JSON.parse(storedParticipants));
-            }
-        } catch (e) {
-            console.error("Failed to parse data from localStorage", e);
-            setDrawnParticipants([]);
-            setParticipants([]);
-        }
-    }, []);
+  const timerRef = useRef<any>(null);
 
-    useEffect(() => {
-        localStorage.setItem(LOCAL_STORAGE_KEY_PARTICIPANTS, JSON.stringify(participants));
-    }, [participants]);
-    
-    useEffect(() => {
-        localStorage.setItem(LOCAL_STORAGE_KEY_DRAWN, JSON.stringify(drawnParticipants));
-    }, [drawnParticipants]);
+  // Load data from LocalStorage on mount
+  useEffect(() => {
+    try {
+      const storedParticipants = localStorage.getItem(LOCAL_STORAGE_KEY_PARTICIPANTS);
+      const storedHistory = localStorage.getItem(LOCAL_STORAGE_KEY_HISTORY);
 
-    const eligibleParticipants = useMemo(() => 
-        participants.filter(p => !drawnParticipants.includes(p)),
-        [participants, drawnParticipants]
-    );
+      if (storedParticipants) setParticipants(JSON.parse(storedParticipants));
+      if (storedHistory) setHistory(JSON.parse(storedHistory));
+    } catch (error) {
+      console.error("Error loading data from local storage", error);
+    }
+  }, []);
 
-    const handleAddParticipant = (e: React.FormEvent) => {
-        e.preventDefault();
-        const newName = newParticipantInput.trim();
-        if (!newName) {
-            setParticipantError('Tên người tham gia không được để trống.');
-            return;
-        }
-        if (participants.some(p => p.toLowerCase() === newName.toLowerCase())) {
-            setParticipantError('Người tham gia này đã có trong danh sách.');
-            return;
-        }
-        setParticipants(prev => [...prev, newName].sort((a, b) => a.localeCompare(b)));
-        setNewParticipantInput('');
-        setParticipantError('');
-    };
+  // Save data to LocalStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY_PARTICIPANTS, JSON.stringify(participants));
+  }, [participants]);
 
-    const handleDeleteParticipant = (nameToDelete: string) => {
-        if (window.confirm(`Bạn có chắc muốn xóa "${nameToDelete}"? Thao tác này cũng sẽ xóa họ khỏi lịch sử trúng thưởng (nếu có) và cho phép họ tham gia lại.`)) {
-            setParticipants(prev => prev.filter(p => p !== nameToDelete));
-            setDrawnParticipants(prev => prev.filter(p => p !== nameToDelete));
-        }
-    };
+  useEffect(() => {
+    localStorage.setItem(LOCAL_STORAGE_KEY_HISTORY, JSON.stringify(history));
+  }, [history]);
 
-    const handleDraw = useCallback(() => {
-        setError('');
-        setWinners([]);
+  // Import Excel
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-        const numWinners = parseInt(numWinnersInput, 10);
-
-        if (isNaN(numWinners) || numWinners <= 0) {
-            setError('Số người trúng thưởng phải là một số lớn hơn 0.');
-            return;
-        }
-
-        if (eligibleParticipants.length === 0) {
-            setError('Không có người nào hợp lệ để tham gia bốc thăm.');
-            return;
-        }
-
-        if (numWinners > eligibleParticipants.length) {
-            setError(`Số người trúng thưởng không thể lớn hơn số người tham gia hợp lệ (${eligibleParticipants.length}).`);
-            return;
-        }
-
-        setIsDrawing(true);
-        spinningSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
-
-        const animationDuration = 3000;
-        const startTime = Date.now();
-
-        const animationStep = () => {
-            if (eligibleParticipants.length > 0) {
-                const randomIndex = Math.floor(Math.random() * eligibleParticipants.length);
-                setDrawingName(eligibleParticipants[randomIndex]);
-            }
-             if (Date.now() - startTime < animationDuration) {
-                animationFrameId.current = requestAnimationFrame(animationStep);
-            }
-        };
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const data = event.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
         
-        animationFrameId.current = requestAnimationFrame(animationStep);
+        // Flatten array and filter valid names
+        const names: string[] = jsonData.flat().filter((n: any) => typeof n === 'string' && n.trim() !== '');
+        
+        const newParticipants: Participant[] = names.map(name => ({
+          id: crypto.randomUUID(),
+          name: name.trim()
+        }));
 
-        setTimeout(() => {
-            if (animationFrameId.current) {
-                cancelAnimationFrame(animationFrameId.current);
-            }
-            
-            spinningSoundRef.current?.pause();
-            if(spinningSoundRef.current) spinningSoundRef.current.currentTime = 0;
-            winSoundRef.current?.play().catch(e => console.error("Audio play failed:", e));
+        setParticipants(prev => [...prev, ...newParticipants]);
+        alert(`Đã nhập thành công ${newParticipants.length} người tham gia!`);
+      } catch (error) {
+        console.error("Excel import error:", error);
+        alert("Lỗi khi đọc file Excel. Vui lòng thử lại.");
+      }
+    };
+    reader.readAsBinaryString(file);
+    // Reset input
+    e.target.value = ''; 
+  };
 
-            const shuffled = [...eligibleParticipants].sort(() => 0.5 - Math.random());
-            const newWinners = shuffled.slice(0, numWinners);
-            
-            setWinners(newWinners);
-            
-            const updatedDrawnParticipants = [...drawnParticipants, ...newWinners].sort((a,b) => a.localeCompare(b));
-            setDrawnParticipants(updatedDrawnParticipants);
-            
-            setIsDrawing(false);
-            setDrawingName('');
-        }, animationDuration);
+  // Export Excel
+  const handleExportHistory = () => {
+    if (history.length === 0) {
+      alert("Chưa có dữ liệu lịch sử để xuất.");
+      return;
+    }
+    const ws = XLSX.utils.json_to_sheet(history.map(h => ({
+      "Tên người trúng": h.name,
+      "Giải thưởng": h.prize,
+      "Thời gian": h.timestamp
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Danh sách trúng thưởng");
+    XLSX.writeFile(wb, "Ket_qua_boc_tham.xlsx");
+  };
 
-    }, [numWinnersInput, eligibleParticipants, drawnParticipants]);
+  // Add single participant manually
+  const handleAddParticipant = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim()) return;
+    setParticipants([...participants, { id: crypto.randomUUID(), name: newName.trim() }]);
+    setNewName('');
+  };
+
+  // Remove single participant
+  const handleRemoveParticipant = (id: string) => {
+    if (confirm("Bạn có chắc chắn muốn xóa người này khỏi danh sách?")) {
+      setParticipants(prev => prev.filter(p => p.id !== id));
+    }
+  };
+
+  // Clear all data
+  const handleResetAll = () => {
+    if (confirm("Bạn có chắc chắn muốn xóa toàn bộ dữ liệu (Người tham gia và Lịch sử)?")) {
+      setParticipants([]);
+      setHistory([]);
+      setWinner(null);
+      setDisplayParticipant('---');
+    }
+  };
+  
+  // Clear only history
+  const handleResetHistory = () => {
+     if (confirm("Bạn có chắc chắn muốn xóa lịch sử trúng thưởng?")) {
+      setHistory([]);
+      setWinner(null);
+    }
+  }
+
+  // Draw Logic
+  const handleDraw = () => {
+    if (participants.length === 0) {
+      alert("Danh sách người tham gia đang trống!");
+      return;
+    }
+
+    if (isSpinning) return;
+
+    setIsSpinning(true);
+    setWinner(null);
+
+    // Animation interval
+    let counter = 0;
+    const intervalTime = 50; // ms
     
-    const handleClearAll = () => {
-        if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ dữ liệu, bao gồm cả danh sách tham gia và lịch sử trúng thưởng?')) {
-            setParticipants([]);
-            setNumWinnersInput('1');
-            setWinners([]);
-            setDrawnParticipants([]);
-            setError('');
-            setParticipantError('');
-            localStorage.removeItem(LOCAL_STORAGE_KEY_PARTICIPANTS);
-            localStorage.removeItem(LOCAL_STORAGE_KEY_DRAWN);
-        }
+    timerRef.current = setInterval(() => {
+      const randomIndex = Math.floor(Math.random() * participants.length);
+      setDisplayParticipant(participants[randomIndex].name);
+      counter++;
+    }, intervalTime);
+
+    // Stop after 3 seconds
+    setTimeout(() => {
+      clearInterval(timerRef.current);
+      finishDraw();
+    }, 2000);
+  };
+
+  const finishDraw = () => {
+    // Pick winner
+    const winnerIndex = Math.floor(Math.random() * participants.length);
+    const selectedWinner = participants[winnerIndex];
+
+    // Create winner record
+    const winRecord: Winner = {
+      ...selectedWinner,
+      prize: currentPrize,
+      timestamp: new Date().toLocaleString('vi-VN')
     };
 
-    const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) {
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            try {
-                const data = new Uint8Array(e.target?.result as ArrayBuffer);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
-                const json: (string | number)[][] = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-
-                const newNames = json
-                    .slice(1) // Skip header row
-                    .map(row => row[0]) // Get first column
-                    .filter(name => name && typeof name === 'string' && name.trim() !== '')
-                    .map(name => (name as string).trim());
-                
-                if (newNames.length === 0) {
-                    alert('Không tìm thấy tên hợp lệ trong cột đầu tiên của file Excel/CSV.');
-                    return;
-                }
-
-                setParticipants(prev => {
-                    const existingNames = new Set(prev.map(p => p.toLowerCase()));
-                    const uniqueNewNames = newNames.filter(name => !existingNames.has(name.toLowerCase()));
-                    
-                    if (uniqueNewNames.length === 0) {
-                        alert(`Tất cả ${newNames.length} tên trong file đã có trong danh sách.`);
-                        return prev;
-                    }
-                    
-                    alert(`Đã thêm thành công ${uniqueNewNames.length} người tham gia mới. ${newNames.length - uniqueNewNames.length} tên trùng lặp đã được bỏ qua.`);
-                    
-                    return [...prev, ...uniqueNewNames].sort((a, b) => a.localeCompare(b));
-                });
-
-            } catch (err) {
-                console.error("Error reading file:", err);
-                setError('Có lỗi xảy ra khi đọc file. Vui lòng đảm bảo file có định dạng đúng.');
-            } finally {
-                if (fileInputRef.current) {
-                    fileInputRef.current.value = '';
-                }
-            }
-        };
-        reader.readAsArrayBuffer(file);
-    };
-
-    const triggerFileInput = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleDownloadTemplate = () => {
-        const data = [
-            ["Tên Người Tham Gia"],
-            ["Nguyễn Văn A"],
-            ["Trần Thị B"],
-            ["Lê Thị C"],
-        ];
-        const worksheet = XLSX.utils.aoa_to_sheet(data);
-        worksheet['!cols'] = [{ wch: 30 }]; // Set column width to 30 characters
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Danh Sách Tham Gia");
-        XLSX.writeFile(workbook, "Mau_Danh_Sach_Tham_Gia.xlsx");
-    };
-
-    const handleExportWinners = () => {
-        if (drawnParticipants.length === 0) {
-            alert("Chưa có ai trúng thưởng để xuất file.");
-            return;
-        }
+    setWinner(winRecord);
+    setDisplayParticipant(selectedWinner.name);
+    setHistory(prev => [winRecord, ...prev]); // Add to top of history
     
-        const data = [
-            ["STT", "Tên Người Trúng Thưởng"],
-            ...drawnParticipants.map((winner, index) => [index + 1, winner])
-        ];
-    
-        const worksheet = XLSX.utils.aoa_to_sheet(data);
-        worksheet['!cols'] = [{ wch: 5 }, { wch: 30 }];
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Danh Sách Trúng Thưởng");
-    
-        const today = new Date();
-        const dateString = `${today.getFullYear()}${(today.getMonth() + 1).toString().padStart(2, '0')}${today.getDate().toString().padStart(2, '0')}`;
-        XLSX.writeFile(workbook, `Danh_Sach_Trung_Thuong_${dateString}.xlsx`);
-    };
+    // Remove from participants list so they can't win again
+    const newParticipants = [...participants];
+    newParticipants.splice(winnerIndex, 1);
+    setParticipants(newParticipants);
 
+    setIsSpinning(false);
+  };
 
-    return (
-        <div className="min-h-screen bg-gray-50 text-gray-800 font-sans p-4 sm:p-6 lg:p-8">
-            <audio ref={spinningSoundRef} src={SPINNING_SOUND_BASE64} loop preload="auto"></audio>
-            <audio ref={winSoundRef} src={WIN_SOUND_BASE64} preload="auto"></audio>
-            
-            <div className="max-w-7xl mx-auto">
-                <header className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center bg-blue-100 text-blue-600 rounded-full p-3 mb-4">
-                        <GiftIcon className="w-10 h-10" />
-                    </div>
-                    <h1 className="text-4xl sm:text-5xl font-bold text-gray-900">Bốc Thăm May Mắn</h1>
-                    <p className="mt-2 text-lg text-gray-600">Công bằng - Minh bạch - Mỗi người chỉ trúng 1 lần</p>
-                </header>
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-800 font-sans">
+      {/* Header */}
+      <header className="bg-blue-600 text-white p-4 shadow-md">
+        <div className="container mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+          <div className="flex items-center gap-2">
+            <GiftIcon className="w-8 h-8" />
+            <h1 className="text-2xl font-bold">Bốc Thăm Trúng Thưởng</h1>
+          </div>
+          <div className="flex gap-2">
+             <label className="flex items-center gap-2 bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded cursor-pointer transition">
+                <UploadIcon className="w-5 h-5" />
+                <span>Nhập Excel</span>
+                <input type="file" accept=".xlsx, .xls" onChange={handleFileUpload} className="hidden" />
+             </label>
+             <button onClick={handleExportHistory} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 px-4 py-2 rounded transition">
+                <DownloadIcon className="w-5 h-5" />
+                <span>Xuất Kết Quả</span>
+             </button>
+             <button onClick={handleResetAll} className="flex items-center gap-2 bg-red-500 hover:bg-red-600 px-4 py-2 rounded transition">
+                <TrashIcon className="w-5 h-5" />
+                <span>Xóa Hết</span>
+             </button>
+          </div>
+        </div>
+      </header>
 
-                <main className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    {/* Cột cài đặt */}
-                    <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-                        <h2 className="text-2xl font-semibold mb-4 flex items-center">
-                            <UsersIcon className="w-7 h-7 mr-3 text-blue-500" />
-                            <span>Cài đặt bốc thăm</span>
-                        </h2>
-                        
-                        <div className="space-y-6">
-                           <div>
-                                <label htmlFor="newParticipant" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Quản lý người tham gia
-                                </label>
-                                <form onSubmit={handleAddParticipant} className="flex gap-2">
-                                    <input
-                                        id="newParticipant"
-                                        type="text"
-                                        className="flex-grow p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out text-gray-800 bg-gray-50"
-                                        placeholder="Nhập tên và nhấn Enter để thêm"
-                                        value={newParticipantInput}
-                                        onChange={(e) => setNewParticipantInput(e.target.value)}
-                                        disabled={isDrawing}
-                                    />
+      <main className="container mx-auto p-4 md:p-8 flex flex-col lg:flex-row gap-8">
+        
+        {/* Left Column: Participants */}
+        <div className="lg:w-1/4 flex flex-col gap-4">
+            <div className="bg-white p-4 rounded-lg shadow border border-gray-200">
+                <h2 className="font-bold text-lg flex items-center gap-2 mb-3 text-gray-700">
+                    <UsersIcon className="w-5 h-5 text-blue-500" />
+                    Danh Sách ({participants.length})
+                </h2>
+                <form onSubmit={handleAddParticipant} className="flex gap-2 mb-4">
+                    <input 
+                        type="text" 
+                        value={newName} 
+                        onChange={(e) => setNewName(e.target.value)}
+                        placeholder="Thêm tên..." 
+                        className="flex-1 border rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button type="submit" className="bg-blue-100 text-blue-600 px-3 py-1 rounded hover:bg-blue-200 font-medium text-sm">+</button>
+                </form>
+                <div className="overflow-y-auto max-h-[500px] border-t pt-2">
+                    {participants.length === 0 ? (
+                        <p className="text-gray-400 text-sm text-center italic mt-4">Chưa có người tham gia</p>
+                    ) : (
+                        <ul className="space-y-1">
+                            {participants.map((p, idx) => (
+                                <li key={p.id} className="text-sm px-2 py-1.5 hover:bg-gray-100 rounded border-b border-gray-50 last:border-0 flex justify-between items-center group">
+                                    <span className="truncate flex-1">{idx + 1}. {p.name}</span>
                                     <button 
-                                        type="submit" 
-                                        className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
-                                        disabled={isDrawing || !newParticipantInput.trim()}
+                                        onClick={() => handleRemoveParticipant(p.id)}
+                                        className="ml-2 text-gray-400 hover:text-red-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        title="Xóa người này"
                                     >
-                                        Thêm
+                                        <TrashIcon className="w-4 h-4" />
                                     </button>
-                                </form>
-                                {participantError && <p className="text-red-500 text-sm mt-1">{participantError}</p>}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+            </div>
+        </div>
 
-                                <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        onChange={handleFileImport}
-                                        className="hidden"
-                                        accept=".xlsx, .xls, .csv"
-                                    />
-                                    <button
-                                        onClick={triggerFileInput}
-                                        className="w-full flex items-center justify-center gap-2 bg-green-100 text-green-800 font-semibold py-2 px-4 rounded-lg hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-400 transition-colors"
-                                        disabled={isDrawing}
-                                    >
-                                        <UploadIcon className="w-5 h-5" />
-                                        Import từ Excel
-                                    </button>
-                                    <button
-                                        onClick={handleDownloadTemplate}
-                                        className="w-full flex items-center justify-center gap-2 bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 disabled:bg-gray-400 transition-colors"
-                                        disabled={isDrawing}
-                                    >
-                                        <DownloadIcon className="w-5 h-5" />
-                                        Tải file mẫu
-                                    </button>
-                                </div>
-
-
-                                <div className="mt-4 max-h-60 overflow-y-auto border rounded-lg p-2 bg-gray-50 space-y-1">
-                                    {participants.length > 0 ? (
-                                        participants.map((p, index) => (
-                                            <div key={index} className="flex items-center justify-between bg-white p-2 rounded-md shadow-sm">
-                                                <div className="flex items-center truncate">
-                                                    {drawnParticipants.includes(p) ? (
-                                                        <TrophyIcon className="w-4 h-4 mr-2 text-yellow-400 flex-shrink-0" />
-                                                    ) : (
-                                                        <div className="w-4 h-4 mr-2 flex-shrink-0"></div>
-                                                    )}
-                                                    <span className={`truncate ${drawnParticipants.includes(p) ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                                                        {p}
-                                                    </span>
-                                                </div>
-                                                <button 
-                                                    onClick={() => handleDeleteParticipant(p)} 
-                                                    disabled={isDrawing} 
-                                                    className="ml-2 text-gray-400 hover:text-red-500 disabled:text-gray-300 disabled:cursor-not-allowed transition-colors"
-                                                    aria-label={`Xóa ${p}`}
-                                                >
-                                                    <TrashIcon className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <p className="text-gray-500 text-center py-4">Chưa có ai trong danh sách.</p>
-                                    )}
-                                </div>
-                                <p className="text-sm text-gray-500 mt-2">Tổng số: {participants.length} | Hợp lệ: <span className="font-semibold text-green-600">{eligibleParticipants.length}</span></p>
-                            </div>
-
-                            <div>
-                                <label htmlFor="numWinners" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Số người trúng thưởng
-                                </label>
-                                <input
-                                    type="number"
-                                    id="numWinners"
-                                    min="1"
-                                    className="w-full max-w-xs p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out text-gray-800 bg-gray-50"
-                                    value={numWinnersInput}
-                                    onChange={(e) => setNumWinnersInput(e.target.value)}
-                                    disabled={isDrawing}
-                                />
-                            </div>
-
-                            {error && <p className="text-red-600 bg-red-100 p-3 rounded-lg text-sm">{error}</p>}
-                            
-                            <div className="flex flex-wrap gap-3 pt-2">
-                                <button
-                                    onClick={handleDraw}
-                                    disabled={isDrawing || eligibleParticipants.length === 0}
-                                    className="flex-grow sm:flex-grow-0 bg-blue-600 text-white font-bold py-3 px-6 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition duration-300 ease-in-out shadow-md"
-                                >
-                                    {isDrawing ? 'Đang quay số...' : 'Bắt đầu bốc thăm'}
-                                </button>
-                                <button
-                                    onClick={handleClearAll}
-                                    disabled={isDrawing}
-                                    className="flex-grow sm:flex-grow-0 bg-red-500 text-white font-bold py-3 px-6 rounded-lg hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:bg-gray-400 transition duration-300 ease-in-out shadow-md flex items-center justify-center gap-2"
-                                >
-                                    <TrashIcon className="w-5 h-5"/> Xóa tất cả
-                                </button>
-                            </div>
-                        </div>
+        {/* Center Column: Stage */}
+        <div className="lg:w-2/4 flex flex-col gap-6">
+            
+            {/* Control Panel */}
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-200">
+                 <div className="mb-6">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Loại Giải Thưởng</label>
+                    <div className="flex gap-2">
+                        <input 
+                            type="text" 
+                            value={currentPrize}
+                            onChange={(e) => setCurrentPrize(e.target.value)}
+                            className="flex-1 text-lg border border-gray-300 rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            placeholder="Ví dụ: Giải Đặc Biệt"
+                        />
                     </div>
+                 </div>
 
-                    {/* Cột kết quả */}
-                    <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 flex flex-col">
-                        <h2 className="text-2xl font-semibold mb-4 flex items-center">
-                            <TrophyIcon className="w-7 h-7 mr-3 text-yellow-500" />
-                            <span>Kết quả</span>
-                        </h2>
-                        
-                        <div className="flex-grow flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-200 rounded-lg p-6 text-center min-h-[300px] relative overflow-hidden">
-                            {isDrawing ? (
-                                <div className="z-20 text-center">
-                                     <div 
-                                        className="text-5xl lg:text-7xl font-bold text-blue-600 transition-all duration-100 tabular-nums" 
-                                        style={{ 
-                                            minHeight: '100px', 
-                                            textShadow: '0 0 10px rgba(37, 99, 235, 0.3), 0 0 20px rgba(37, 99, 235, 0.2)' 
-                                        }}
-                                    >
-                                        {drawingName}
-                                    </div>
-                                    <p className="text-gray-500 mt-4 text-lg animate-pulse">Đang tìm người may mắn...</p>
-                                </div>
-                            ) : winners.length > 0 ? (
-                                <div className="w-full">
-                                    <h3 className="text-xl font-semibold text-green-600 mb-4">Xin chúc mừng những người thắng cuộc!</h3>
-                                    <ul className="space-y-2 text-left max-h-80 overflow-y-auto pr-2">
-                                        {winners.map((winner, index) => (
-                                            <li key={index} className="bg-green-100 text-green-800 font-semibold p-3 rounded-md flex items-center text-lg animate-fade-in">
-                                                <TrophyIcon className="w-5 h-5 mr-3 text-yellow-500 flex-shrink-0" />
-                                                <span>{winner}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            ) : (
-                                <div className="text-gray-500">
-                                    <p>Kết quả bốc thăm sẽ được hiển thị ở đây.</p>
-                                    <p>Hãy nhấn nút "Bắt đầu bốc thăm" để quay số.</p>
-                                </div>
-                            )}
-                        </div>
-                         {winners.length > 0 && !isDrawing &&
-                            <button
-                                onClick={() => setWinners([])}
-                                className="mt-4 w-full bg-gray-200 text-gray-800 font-bold py-3 px-6 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-300 ease-in-out flex items-center justify-center gap-2"
-                            >
-                                <RefreshCwIcon className="w-5 h-5"/> Bốc thăm lại
-                            </button>
-                        }
+                 <div className="text-center bg-gray-50 rounded-2xl p-8 mb-6 border-2 border-dashed border-gray-300 relative overflow-hidden">
+                    <div className="absolute inset-0 flex items-center justify-center opacity-5 pointer-events-none">
+                        <GiftIcon className="w-64 h-64" />
                     </div>
-                </main>
+                    <p className="text-gray-500 text-sm font-medium uppercase tracking-wider mb-2">Người may mắn</p>
+                    <div className={`text-4xl md:text-5xl font-extrabold text-gray-800 break-words transition-all duration-100 ${isSpinning ? 'scale-110 text-blue-600 blur-[1px]' : ''}`}>
+                        {displayParticipant}
+                    </div>
+                 </div>
+
+                 <button 
+                    onClick={handleDraw}
+                    disabled={isSpinning || participants.length === 0}
+                    className={`w-full py-4 rounded-xl text-xl font-bold text-white shadow-lg transform transition active:scale-95 ${
+                        isSpinning 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700'
+                    }`}
+                 >
+                    {isSpinning ? 'Đang quay...' : 'BỐC THĂM NGAY'}
+                 </button>
+            </div>
+
+            {/* Winner Notification */}
+            {winner && !isSpinning && (
+                <div className="bg-yellow-50 border-2 border-yellow-200 p-6 rounded-xl shadow-sm text-center animate-bounce-slow">
+                    <h3 className="text-yellow-800 font-bold text-lg mb-1">🎉 Chúc mừng 🎉</h3>
+                    <p className="text-2xl font-bold text-gray-900">{winner.name}</p>
+                    <p className="text-yellow-700 mt-1">Đã trúng: {winner.prize}</p>
+                </div>
+            )}
+        </div>
+
+        {/* Right Column: History */}
+        <div className="lg:w-1/4">
+             <div className="bg-white p-4 rounded-lg shadow border border-gray-200 h-full">
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="font-bold text-lg flex items-center gap-2 text-gray-700">
+                        <HistoryIcon className="w-5 h-5 text-orange-500" />
+                        Lịch Sử Trúng
+                    </h2>
+                    {history.length > 0 && (
+                        <button onClick={handleResetHistory} className="text-xs text-red-500 hover:text-red-700 hover:underline">
+                            Xóa lịch sử
+                        </button>
+                    )}
+                </div>
                 
-                 {/* Lịch sử đã trúng */}
-                 <div className="mt-8 bg-white p-6 rounded-2xl shadow-lg border border-gray-200">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-xl font-semibold flex items-center text-gray-700">
-                            <HistoryIcon className="w-6 h-6 mr-3" />
-                            <span>Lịch sử đã trúng thưởng ({drawnParticipants.length} người)</span>
-                        </h2>
-                        <div className="flex items-center gap-2">
-                             <button
-                                onClick={handleExportWinners}
-                                disabled={drawnParticipants.length === 0}
-                                className="flex items-center justify-center gap-2 bg-green-100 text-green-800 font-semibold py-2 px-3 rounded-lg hover:bg-green-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:bg-gray-200 disabled:text-gray-500 disabled:cursor-not-allowed transition-colors text-sm"
-                                aria-label="Xuất danh sách người trúng thưởng ra file Excel"
-                            >
-                                <DownloadIcon className="w-4 h-4" />
-                                <span>Xuất Excel</span>
-                            </button>
-                            <button onClick={() => setShowHistory(!showHistory)} className="p-2 rounded-md hover:bg-gray-100" aria-label="Ẩn/hiện lịch sử">
-                                <span className="transform transition-transform duration-300 inline-block" style={{ transform: showHistory ? 'rotate(180deg)' : 'rotate(0deg)'}}>
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
-                                </span>
-                            </button>
-                        </div>
-                    </div>
-                    {showHistory && (
-                        <div className="mt-4 max-h-60 overflow-y-auto pr-2">
-                            {drawnParticipants.length > 0 ? (
-                                <ul className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 text-sm">
-                                    {drawnParticipants.map((p, i) => (
-                                        <li key={i} className="bg-gray-100 p-2 rounded-md text-gray-600 truncate flex items-center">
-                                            <TrophyIcon className="w-4 h-4 mr-2 text-yellow-500 flex-shrink-0" />
-                                            {p}
-                                        </li>
-                                    ))}
-                                </ul>
-                            ) : (
-                                <p className="text-gray-500">Chưa có ai trúng thưởng.</p>
-                            )}
+                <div className="overflow-y-auto max-h-[600px] pr-1">
+                    {history.length === 0 ? (
+                         <p className="text-gray-400 text-sm text-center italic mt-4">Chưa có ai trúng thưởng</p>
+                    ) : (
+                        <div className="space-y-3">
+                            {/* Group logic could be added here, for now simple list */}
+                            {history.map((h, idx) => (
+                                <div key={idx} className="bg-gray-50 p-3 rounded border border-gray-100 relative group hover:shadow-sm transition">
+                                    <div className="absolute top-2 right-2 text-xs text-gray-400">{h.timestamp.split(' ')[1]}</div>
+                                    <div className="font-bold text-blue-700">{h.name}</div>
+                                    <div className="text-xs font-medium text-orange-600 bg-orange-50 inline-block px-1.5 py-0.5 rounded mt-1 border border-orange-100">
+                                        {h.prize}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
-
-            </div>
+             </div>
         </div>
-    );
-};
 
-export default App;
+      </main>
+
+      <footer className="bg-white border-t mt-12 py-6 text-center text-gray-500 text-sm">
+        &copy; {new Date().getFullYear()} Ứng dụng Bốc Thăm. Được thiết kế đơn giản và hiệu quả.
+      </footer>
+    </div>
+  );
+}
